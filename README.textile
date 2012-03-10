@@ -20,7 +20,7 @@ bc. include php::apache2
 *php::apache2* will include php automatically.
 
 
-h3. FPM
+h3. PHP-FPM
 
 bc. include php::fpm
 
@@ -31,40 +31,112 @@ bc. notify => Class['php::fpm::service']
 
 *php::fpm* will include @php@ automatically.
 
+To use FPM you need to create at least one pool :
+
+bc. php::fpm::pool { www-data:
+}
+
+Parameters and default values:
+
+* $user = 'www-data'
+* $group = 'www-data'
+* $listen = '/var/run/php-www-data.sock'
+* $pm_max_children = 5
+* $pm_start_servers = 2
+* $pm_min_spare_servers = 1
+* $pm_max_spare_servers = 3
+
 
 h2. Typical Development Usage
 
-bc. include php::fpm
-php::module { 
-  curl:   notify => Class['php::fpm::service'];
-  gd:     notify => Class['php::fpm::service'];
-  mysql:  notify => Class['php::fpm::service'];
-  mcrypt: notify => Class['php::fpm::service'];
-  xmlrpc: notify => Class['php::fpm::service'];
-  xdebug: notify => Class['php::fpm::service'];
-}
-php::module {
-  apc:  package_prefix => 'php', notify => Class['php::fpm::service'];
-  soap: package_prefix => 'php', notify => Class['php::fpm::service'];
-  pear: package_prefix => 'php', notify => Class['php::fpm::service'];
-}
+bc.   $developer = 'ceefour'
+  package { php-doc: ensure => present }
+  file { '/etc/apache2/conf.d/php-doc':
+    ensure  => file,
+    owner   => 'root',
+    group   => 'root',
+    content => 'Alias /php-doc /usr/share/doc/php-doc/html/',
+    notify  => Service['httpd']
+  }
+  augeas { php-fpm:
+    context => '/files/etc/php5/fpm/php.ini',
+    changes => [
+      'set PHP/max_execution_time     900',
+      'set PHP/memory_limit           256M',
+      'set PHP/error_reporting        "E_ALL | E_STRICT"',
+      'set PHP/display_errors         On',
+      'set PHP/display_startup_errors On',
+      'set PHP/log_errors             On',
+      'set PHP/html_errors            On',
+      'set PHP/docref_root            http://localhost/php-doc/',
+      'set PHP/docref_ext             .html',
+      'set PHP/error_log              php_errors.log',
+      'set PHP/post_max_size          8M',
+      'set PHP/upload_max_filesize    8M',
+    ],
+    notify => Class['php::fpm::service']
+  }
+  include php::fpm
+  php::module {
+    curl:   notify => Class['php::fpm::service'];
+    gd:     notify => Class['php::fpm::service'];
+    mysql:  notify => Class['php::fpm::service'];
+    mcrypt: notify => Class['php::fpm::service'];
+    xmlrpc: notify => Class['php::fpm::service'];
+    xdebug: notify => Class['php::fpm::service'];
+  }
+  php::module {
+    apc:  package_prefix => 'php-', notify => Class['php::fpm::service'];
+    soap: package_prefix => 'php-', notify => Class['php::fpm::service'];
+    pear: package_prefix => 'php-', notify => Class['php::fpm::service'];
+  }
+  php::fpm::pool { "$developer":
+    user   => $developer,
+    group  => $developer,
+    listen => "/var/run/php-${developer}.sock"
+  }
 
 
 h2. Typical Production Usage
 
-bc. include php::fpm
-php::module { 
-  curl:   notify => Class['php::fpm::service'],
-  gd:     notify => Class['php::fpm::service'],
-  mysql:  notify => Class['php::fpm::service'],
-  mcrypt: notify => Class['php::fpm::service'],
-  xmlrpc: notify => Class['php::fpm::service'],
-}
-php::module {
-  apc:  package_prefix => 'php', notify => Class['php::fpm::service'];
-  soap: package_prefix => 'php', notify => Class['php::fpm::service'];
-  pear: package_prefix => 'php', notify => Class['php::fpm::service'];
-}
+bc.   augeas { php-fpm:
+    context => '/files/etc/php5/fpm/php.ini',
+    changes => [
+      'set PHP/max_execution_time     900',
+      'set PHP/memory_limit           256M',
+      'set PHP/error_reporting        "E_ALL & ~E_DEPRECATED"',
+      'set PHP/display_errors         On',
+      'set PHP/display_startup_errors On',
+      'set PHP/log_errors             On',
+      'set PHP/html_errors            On',
+      'set PHP/error_log              php_errors.log',
+      'set PHP/post_max_size          8M',
+      'set PHP/upload_max_filesize    8M',
+    ],
+    notify => Class['php::fpm::service']
+  }
+  include php::fpm
+  php::module {
+    curl:   notify => Class['php::fpm::service'];
+    gd:     notify => Class['php::fpm::service'];
+    mysql:  notify => Class['php::fpm::service'];
+    mcrypt: notify => Class['php::fpm::service'];
+    xmlrpc: notify => Class['php::fpm::service'];
+  }
+  php::module {
+    apc:  package_prefix => 'php-', notify => Class['php::fpm::service'];
+    soap: package_prefix => 'php-', notify => Class['php::fpm::service'];
+    pear: package_prefix => 'php-', notify => Class['php::fpm::service'];
+  }
+  php::fpm::pool { magento:
+    user                 => magento,
+    group                => magento,
+    listen               => "/var/run/php-magento.sock",
+    pm_max_children      => 100,
+    pm_start_servers     => 30,
+    pm_min_spare_servers => 10,
+    pm_max_spare_servers => 30
+  }
 
 
 h2. Installing PHP Modules
@@ -79,13 +151,13 @@ bc. php::module { snmp:
 The default package prefix is @php5-@ e.g. php5-gd. You can use other prefix:
 
 bc. php::module { 'apc': 
-  package_prefix => 'php',
+  package_prefix => 'php-',
   notify         => [ Class['php::fpm::service'], Service['apache2'] ],
 }
 
 Multiple modules are possible, too.
 
-bc. php::module { ['snmp', 'xdebug', ]:
+bc. php::module { ['snmp', 'xdebug']:
   notify => Class['php::fpm::service'],
 }
 
@@ -120,11 +192,9 @@ bc. php::module { snmp:
 }
 
 To make it still possible, to have multiple modules, this should point to a directory.
-In this directory, place files named *module.ini*.
+In this directory, place files named `module.ini`.
 
 **Do not forget to add a trailing slash!**
-
-
 
 Sometimes you may need to use a template instead of a file.
 
@@ -136,8 +206,7 @@ bc. php::module { snmp:
 You can define multiple modules, exactly like before with sources.
 The only difference is, that, at the moment, only one template per module will be used.
 
-Place your templates inside your template directory and name them 'module.ini.erb'
-
+Place your templates inside your template directory and name them `module.ini.erb`
 
 
 h2. Additional configuration settings
@@ -149,7 +218,6 @@ bc. php::conf { global:
 }
 
 The same source fetching rules applies as in the 'modules' section.
-
 
 
 h2. Extra configuration files
@@ -191,4 +259,3 @@ h2. Requirements
 h2. TODO
 
 * Manage FPM configuration (global settings)
-* Document the usage of @php::fpm::pool@

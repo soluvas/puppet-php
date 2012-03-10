@@ -2,7 +2,7 @@ define php::fpm::pool(
   $pool_prefix = undef,
   $user = 'www-data',
   $group = 'www-data',
-  $listen = '127.0.0.1:9000',
+  $listen = '/var/run/php-www-data.sock',
   $listen_backlog = undef,
   $listen_type = 'tcp',
   $socket_owner = undef,
