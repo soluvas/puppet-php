@@ -1,0 +1,194 @@
+h1. puppet-php
+
+@puppet-php@ is a puppet module to manage *PHP* on your systems.
+You can manage the *CLI*, *Apache mod_php* and *FPM* version of PHP.
+
+Forked from "saz/puppet-php":https://github.com/saz/puppet-php.
+
+
+h2. How to use
+
+h3. CLI
+
+bc. include php
+
+
+h3. Apache with mod_php
+
+bc. include php::apache2
+
+*php::apache2* will include php automatically.
+
+
+h3. FPM
+
+bc. include php::fpm
+
+It will also create a @service@ with a Puppet name of @php-fpm@.
+But you should not use it directly. To restart php-fpm, use:
+
+bc. notify => Class['php::fpm::service']
+
+*php::fpm* will include @php@ automatically.
+
+
+h2. Typical Development Usage
+
+bc. include php::fpm
+php::module { 
+  curl:   notify => Class['php::fpm::service'];
+  gd:     notify => Class['php::fpm::service'];
+  mysql:  notify => Class['php::fpm::service'];
+  mcrypt: notify => Class['php::fpm::service'];
+  xmlrpc: notify => Class['php::fpm::service'];
+  xdebug: notify => Class['php::fpm::service'];
+}
+php::module {
+  apc:  package_prefix => 'php', notify => Class['php::fpm::service'];
+  soap: package_prefix => 'php', notify => Class['php::fpm::service'];
+  pear: package_prefix => 'php', notify => Class['php::fpm::service'];
+}
+
+
+h2. Typical Production Usage
+
+bc. include php::fpm
+php::module { 
+  curl:   notify => Class['php::fpm::service'],
+  gd:     notify => Class['php::fpm::service'],
+  mysql:  notify => Class['php::fpm::service'],
+  mcrypt: notify => Class['php::fpm::service'],
+  xmlrpc: notify => Class['php::fpm::service'],
+}
+php::module {
+  apc:  package_prefix => 'php', notify => Class['php::fpm::service'];
+  soap: package_prefix => 'php', notify => Class['php::fpm::service'];
+  pear: package_prefix => 'php', notify => Class['php::fpm::service'];
+}
+
+
+h2. Installing PHP Modules
+
+The easiest way of installing additional PHP modules is using packages
+from your distribution and the bundled configuration files.
+
+bc. php::module { snmp:
+  notify => [ Class['php::fpm::service'], Service['apache2'] ],
+}
+
+The default package prefix is @php5-@ e.g. php5-gd. You can use other prefix:
+
+bc. php::module { 'apc': 
+  package_prefix => 'php',
+  notify         => [ Class['php::fpm::service'], Service['apache2'] ],
+}
+
+Multiple modules are possible, too.
+
+bc. php::module { ['snmp', 'xdebug', ]:
+  notify => Class['php::fpm::service'],
+}
+
+Sometimes, modules require some custom configuration settings and you
+want to retrieve a file from the server.
+
+bc. php::module { snmp:
+  source => true,
+  notify => Class['php::fpm::service']
+}
+
+At first, this looks a bit strange. If you set `source` to `true`,
+a file will be fetched from multiple sources:
+
+1. @puppet:///files/${::fqdn}/etc/php5/conf.d/module.ini@
+2. @puppet:///files/${::hostgroup}/etc/php5/conf.d/module.ini@
+3. @puppet:///files/${::domain}/etc/php5/conf.d/module.ini@
+4. @puppet:///files/global/etc/php5/conf.d/module.ini@
+
+The first source that exists will be used.
+This makes it quite easy to have different files for different systems without
+duplicating any of your definitions.
+
+This is even possible, if you manage multiple modules!
+
+
+But if you really need to set a different source, this is possible, too.
+
+bc. php::module { snmp:
+  source => 'puppet:///files/different/path/to/the/file/',
+  notify => Class['php::fpm::service'],
+}
+
+To make it still possible, to have multiple modules, this should point to a directory.
+In this directory, place files named *module.ini*.
+
+**Do not forget to add a trailing slash!**
+
+
+
+Sometimes you may need to use a template instead of a file.
+
+bc. php::module { snmp:
+  content => 'php5/conf.d/',
+  notify  => Class['php::fpm::service'],
+}
+
+You can define multiple modules, exactly like before with sources.
+The only difference is, that, at the moment, only one template per module will be used.
+
+Place your templates inside your template directory and name them 'module.ini.erb'
+
+
+
+h2. Additional configuration settings
+
+You can place additional configuration files in the @conf.d@ directory as follows:
+
+bc. php::conf { global:
+  source => "puppet:///files/php/global.ini",
+}
+
+The same source fetching rules applies as in the 'modules' section.
+
+
+
+h2. Extra configuration files
+
+Those configuration files will be placed inside an 'extras' directory in your configuration root.
+This is to make sure, that those configuration files are not parsed by PHP by default.
+
+bc. php::extra { lite_php_browscap:
+  source  => 'puppet:///files/php5/extra/lite_php_browscap.ini',
+  require => Php::Conf['browscap'],
+  notify  => Class['php::fpm::service'],
+}
+
+You can use a template, too:
+
+bc. php::extra { lite_php_browscap:
+  content => 'php5/conf.d/',
+  require => Php::Conf['browscap'],
+  notify  => Class['php::fpm::service'],
+}
+
+Again, the same source fetching rules applies as in the 'modules' section.
+
+For more information, see @EXAMPLE@
+
+
+h2. Service Notification
+
+On every resource, you can define, what other service should be notified.
+If you run PHP within Apache, you want to notify Apache of any changes or
+FPM should be notified and restarted to make the new configuration work.
+
+
+h2. Requirements
+
+* php::apache2 requires "apache module":https://github.com/soluvas/puppet-apache.
+
+
+h2. TODO
+
+* Manage FPM configuration (global settings)
+* Document the usage of @php::fpm::pool@
