@@ -96,6 +96,29 @@ bc.   $developer = 'ceefour'
     listen => "/var/run/php-${developer}.sock"
   }
 
+Example "Apache FastCGI":https://github.com/soluvas/puppet-apache configuration for the above PHP-FPM pool:
+
+bc.  file { "/home/${developer}/public_html":
+    ensure => directory,
+    owner  => $developer,
+    group  => $developer,
+    mode   => 0755
+  }
+  file { "/home/${developer}/fastcgi-bin":
+    ensure => directory,
+    owner  => $developer,
+    group  => $developer,
+    mode   => 0755
+  }
+  apache::vhost::fastcgi_php { "${developer}.${::fqdn}":
+    docroot     => "/home/${developer}/public_html",
+    fastcgi_dir => "/home/${developer}/fastcgi-bin",
+    socket      => "/var/run/php-${developer}.sock",
+    options     => 'All',
+    require     => [ File["/home/${developer}/public_html"],
+                     File["/home/${developer}/fastcgi-bin"] ]
+  }
+
 
 h2. Typical Production Usage
 
