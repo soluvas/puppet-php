@@ -119,6 +119,12 @@ bc.  file { "/home/${developer}/public_html":
                      File["/home/${developer}/fastcgi-bin"] ]
   }
 
+To test the PHP Documentation links in the Puppet configuration above, create a test PHP file in @~/public_html@ as follows:
+
+bc. <?php echo fopen('/epret/helo', 'r');
+
+The error message in the browser should be clickable to the local PHP Documentation.   
+
 
 h2. Typical Production Usage
 
