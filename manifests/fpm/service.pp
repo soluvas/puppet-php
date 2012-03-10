@@ -1,5 +1,6 @@
 class php::fpm::service {
-    service { $php::params::fpm_service_name:
+    service { php-fpm:
+    	name       => $php::params::fpm_service_name,
         ensure     => running,
         hasstatus  => true,
         hasrestart => true,
