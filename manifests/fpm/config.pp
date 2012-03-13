@@ -37,13 +37,14 @@ class php::fpm::config {
         ensure  => file,
     }
 
-    file { $php::params::fpm_conf:
-        owner   => root,
-        group   => root,
-        require => Class["php::fpm::install"],
-        notify  => Class["php::fpm::service"],
-        ensure  => file,
-        content => $php::fpm::fpm_conf_content,
-        source  => $php::fpm::fpm_conf_source,
-    }
+#    file { $php::params::fpm_conf:
+#        owner   => root,
+#        group   => root,
+#        require => Class["php::fpm::install"],
+#        notify  => Class["php::fpm::service"],
+#        ensure  => file,
+#        content => $php::fpm::fpm_conf_content,
+#        source  => $php::fpm::fpm_conf_source,
+#    }
+
 }
