@@ -2,9 +2,9 @@ class php::fpm::config {
     file { $php::params::fpm_dir:
         owner   => root,
         group   => root,
-        purge   => true,
-        recurse => true,
-        force   => true,
+#        purge   => true,
+#        recurse => true,
+#        force   => true,
         require => Class["php::fpm::install"],
         notify  => Class["php::fpm::service"],
         ensure  => directory,
