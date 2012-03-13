@@ -27,15 +27,15 @@ class php::fpm::config {
         ensure  => directory,
     }
 
-    file { $php::params::fpm_ini:
-        owner   => root,
-        group   => root,
-        require => Class["php::fpm::install"],
-        notify  => Class["php::fpm::service"],
-        content => $php::fpm::fpm_ini_content,
-        source  => $php::fpm::fpm_ini_source,
-        ensure  => file,
-    }
+#    file { $php::params::fpm_ini:
+#        owner   => root,
+#        group   => root,
+#        require => Class["php::fpm::install"],
+#        notify  => Class["php::fpm::service"],
+#        content => $php::fpm::fpm_ini_content,
+#        source  => $php::fpm::fpm_ini_source,
+#        ensure  => file,
+#    }
 
 #    file { $php::params::fpm_conf:
 #        owner   => root,
