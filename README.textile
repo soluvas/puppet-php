@@ -61,6 +61,7 @@ bc.   $developer = 'ceefour'
   augeas { php-fpm:
     context => '/files/etc/php5/fpm/php.ini',
     changes => [
+      'set PHP/cgi.fix_pathinfo       0',
       'set PHP/max_execution_time     900',
       'set PHP/memory_limit           256M',
       'set PHP/error_reporting        "E_ALL | E_STRICT"',
@@ -131,6 +132,7 @@ h2. Typical Production Usage
 bc.   augeas { php-fpm:
     context => '/files/etc/php5/fpm/php.ini',
     changes => [
+      'set PHP/cgi.fix_pathinfo       0',
       'set PHP/max_execution_time     900',
       'set PHP/memory_limit           256M',
       'set PHP/error_reporting        "E_ALL & ~E_DEPRECATED"',
